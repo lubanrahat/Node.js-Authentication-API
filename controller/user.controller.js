@@ -199,4 +199,55 @@ const logout = async (req, res) => {
   }
 };
 
-export { registerUser, verifyUser, loginUser, getMe };
+const forgetPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required!",
+      success: false,
+    });
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "This email is not registered!",
+      });
+    }
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = token;
+    user.resetPasswordExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.MAILTRAP_HOST,
+      port: process.env.MAILTRAP_PORT,
+      secure: false,
+      auth: {
+        user: process.env.MAILTRAP_USERNAME,
+        pass: process.env.MAILTRAP_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"Maddison Foo Koch" <maddison53@ethereal.email>',
+      to: user.email,
+      subject: "Reset Your Password",
+      text: `You requested a password reset.\nClick the link below to reset your password:\n${process.env.BASE_URL}/api/v1/users/reset-password/${token}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent successfully!",
+    });
+  } catch (error) {
+    console.error("Forget Password Error:", error.message);
+    res.status(500).json({
+      message: "Something went wrong while processing the password reset.",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+export { registerUser, verifyUser, loginUser, getMe, logout,forgetPassword };
