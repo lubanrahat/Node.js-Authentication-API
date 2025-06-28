@@ -218,6 +218,7 @@ const forgetPassword = async (req, res) => {
     const token = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = token;
     user.resetPasswordExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
 
     const transporter = nodemailer.createTransport({
       host: process.env.MAILTRAP_HOST,
@@ -233,7 +234,7 @@ const forgetPassword = async (req, res) => {
       from: '"Maddison Foo Koch" <maddison53@ethereal.email>',
       to: user.email,
       subject: "Reset Your Password",
-      text: `You requested a password reset.\nClick the link below to reset your password:\n${process.env.BASE_URL}/api/v1/users/reset-password/${token}`,
+      text: `You requested a password reset.\nClick the link below to reset your password:\n${process.env.BASE_URL}/api/v1/users/reset-password/${user.resetPasswordToken}`,
     });
 
     res.status(200).json({
@@ -250,4 +251,56 @@ const forgetPassword = async (req, res) => {
   }
 };
 
-export { registerUser, verifyUser, loginUser, getMe, logout,forgetPassword };
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password, confirmPassword } = req.body;
+  if (!password) {
+    return res.status(400).json({
+      message: "Password and confirm password are required.",
+      success: false,
+    });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Passwords do not match.",
+    });
+  }
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpiry: { $gt: new Date() },
+    });
+    console.log(user.resetPasswordToken)
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired token!",
+        success: false,
+      });
+    }
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+    user.save();
+    res.status(200).json({
+      message: "Password reset successful!",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error.message);
+    res.status(500).json({
+      message: "Server error during password reset.",
+      success: false,
+    });
+  }
+};
+
+export {
+  registerUser,
+  verifyUser,
+  loginUser,
+  getMe,
+  logout,
+  forgetPassword,
+  resetPassword,
+};
