@@ -1,0 +1,29 @@
+{
+  "name": "node.js-authentication-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lubanrahat/Node.js-Authentication-API.git"
+  },
+  "keywords": [],
+  "author": "Luban Rahat",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/lubanrahat/Node.js-Authentication-API/issues"
+  },
+  "homepage": "https://github.com/lubanrahat/Node.js-Authentication-API#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
