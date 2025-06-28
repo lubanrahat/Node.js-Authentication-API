@@ -177,4 +177,26 @@ const getMe = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    res.cookie("token", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      expires: new Date(0),
+    });
+
+    res.status(200).json({
+      message: "Logout successful!",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Logout error:", error.message);
+    res.status(500).json({
+      message: "Failed to log out. Please try again.",
+      success: false,
+    });
+  }
+};
+
 export { registerUser, verifyUser, loginUser, getMe };
