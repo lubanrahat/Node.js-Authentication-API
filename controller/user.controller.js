@@ -156,7 +156,25 @@ const loginUser = async (req, res) => {
 };
 
 const getMe = async (req, res) => {
-    console.log("Profile!")
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found!",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Profile fetch error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile. Please try again.",
+    });
+  }
 };
 
 export { registerUser, verifyUser, loginUser, getMe };
