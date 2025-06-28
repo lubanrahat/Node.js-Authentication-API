@@ -64,4 +64,38 @@ const registerUser = async (req, res) => {
   }
 };
 
-export { registerUser };
+const verifyUser = async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Token is missing or invalid!",
+      });
+    }
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired token!",
+      });
+    }
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: "User has been verified successfully!",
+    });
+  } catch (error) {
+    console.error("Verification Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong during verification.",
+      error: error.message,
+    });
+  }
+};
+
+export { registerUser, verifyUser };
