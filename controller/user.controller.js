@@ -155,4 +155,8 @@ const loginUser = async (req, res) => {
   }
 };
 
-export { registerUser, verifyUser, loginUser };
+const getMe = async (req, res) => {
+    console.log("Profile!")
+};
+
+export { registerUser, verifyUser, loginUser, getMe };
