@@ -12,6 +12,13 @@ const registerUser = async (req, res) => {
       message: "All fields (name, email, and password) are required.",
     });
   }
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (emailRegex.test(email)) {
+    return res.status(400).json({
+      success: true,
+       message: "Invalid email address.",
+    });
+  }
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -271,7 +278,7 @@ const resetPassword = async (req, res) => {
       resetPasswordToken: token,
       resetPasswordExpiry: { $gt: new Date() },
     });
-    console.log(user.resetPasswordToken)
+    console.log(user.resetPasswordToken);
     if (!user) {
       return res.status(400).json({
         message: "Invalid or expired token!",
