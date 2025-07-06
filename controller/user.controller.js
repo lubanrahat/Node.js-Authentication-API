@@ -16,7 +16,16 @@ const registerUser = async (req, res) => {
   if (emailRegex.test(email)) {
     return res.status(400).json({
       success: true,
-       message: "Invalid email address.",
+      message: "Invalid email address.",
+    });
+  }
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (passwordRegex.test(passwordRegex)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.",
     });
   }
   try {
