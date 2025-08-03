@@ -11,7 +11,7 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: true,
     methods: ["GET", "POST", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -19,7 +19,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
   res.send("Hello world!");

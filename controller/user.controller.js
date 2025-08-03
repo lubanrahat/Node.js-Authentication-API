@@ -1,7 +1,6 @@
 import User from "../model/User.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const registerUser = async (req, res) => {
@@ -13,7 +12,7 @@ const registerUser = async (req, res) => {
     });
   }
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (emailRegex.test(email)) {
+  if (!emailRegex.test(email)) {
     return res.status(400).json({
       success: true,
       message: "Invalid email address.",
@@ -129,32 +128,47 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "User not found!",
+        message: "Invalid email or password!",
       });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: "Invalid credentials!",
+        message: "Invalid email or password!",
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    const accessToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_ACCESSTOKEN_SECRET,
+      {
+        expiresIn: process.env.JWT_ACCESSTOKEN_EXPIRY,
+      }
+    );
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_REFRESHTOKEN_SECRET,
+      {
+        expiresIn: process.env.JWT_ACCESSTOKEN_EXPIRY,
+      }
+    );
+    user.refreshToken = refreshToken;
+    await user.save();
 
-    res.cookie("token", token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: "Strict",
       maxAge: 24 * 60 * 60 * 1000,
-    });
+    };
+
+    res.cookie("accessToken", accessToken, cookieOptions);
+    res.cookie("refreshToken", refreshToken, cookieOptions);
 
     res.status(200).json({
       success: true,
       message: "Login successful!",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -194,17 +208,40 @@ const getMe = async (req, res) => {
 };
 
 const logout = async (req, res) => {
+  const token = req.cookies?.refreshToken;
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized access",
+    });
+  }
   try {
-    res.cookie("token", "", {
+    const refreshDecoded = jwt.verify(
+      token,
+      process.env.JWT_REFRESHTOKEN_SECRET
+    );
+    const user = await User.findOne({ _id: refreshDecoded.id });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access",
+      });
+    }
+    user.refreshToken = null;
+    await user.save();
+    const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: "Strict",
-      expires: new Date(0),
-    });
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+
+    res.cookie("accessToken", "", cookieOptions);
+    res.cookie("refreshToken", "", cookieOptions);
 
     res.status(200).json({
-      message: "Logout successful!",
       success: true,
+      message: "User logged out successfully",
     });
   } catch (error) {
     console.error("Logout error:", error.message);
